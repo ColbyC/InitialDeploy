@@ -1,0 +1,104 @@
+#!/bin/bash
+
+echo -e "\e[33mHOST:\e[39m"
+read host
+echo -e "\e[33mPort\e[39m"
+read port
+echo -e "\e[33mUser:\e[39m"
+read user
+echo -e "\e[33mKey Password\e[39m"
+read password
+printf "\n\n"
+
+## Setting Global Variables
+PARENT=${0%/*}
+# Color Variables
+  msgNormal='\033[1;33m'
+  msgSuccess='\033[1;32m'
+  msgError='\033[1;31m'
+  msgReset='\033[0m'
+## Settings Function
+clean() {
+  rm -rf ${PARENT}/package/keys/*
+  rm -rf ${PARENT}/package/cache/*
+}
+generateKeys() {
+  local pass=1
+  local fhost=$1
+  local fport=$2
+  local fuser=$3
+  local fpassword=$4
+  local fparent=${0%/*}
+  ##Gen General Key
+  ssh-keygen -P "${fpassword}" -f ~/.ssh/keys/${fuser}-${fhost}-${fport} >> /dev/null
+    if [ $? -eq 0 ]; then
+        printf "${msgSuccess}OK${msgReset}\n"
+      else
+        printf "${msgError}FAIL${msgReset}\n"
+        local pass=0
+    fi
+  ## Mk Area
+  mkdir ${fparent}/package/keys/${fuser} >> /dev/null
+  if [ $? -eq 0 ]; then
+      printf "${msgSuccess}OK${msgReset}\n"
+    else
+      printf "${msgError}FAIL${msgReset}\n"
+      local pass=0
+  fi
+  ## Mv keys
+  cp -f ~/.ssh/keys/${fuser}-${fhost}-${fport}.pub ${fparent}/package/keys/${fuser}/key.pub >> /dev/null
+  if [ $? -eq 0 ]; then
+      printf "${msgSuccess}OK${msgReset}\n"
+    else
+      printf "${msgError}FAIL${msgReset}\n"
+      local pass=0
+  fi
+
+  if [ $pass == 1 ]; then
+    return 0;
+  else
+  return 1;
+fi
+  }
+clean ##CLEAN FOR NEW RUN
+
+##############################################################################
+printf "${msgNormal} Generating Key Pairs ${msgReset}\n"
+generateKeys $host $port $user $password
+if [ $? -ne 0 ]; then
+  printf "${msgError}CRITICAL ERROR${msgReset}\n"
+  exit
+fi
+##############################################################################
+printf "${msgNormal} Moving Public Keys ${msgReset}\n"
+ssh-copy-id -p $port -i ~/.ssh/keys/${user}-${host}-${port} ${user}@${host}
+if [ $? -ne 0 ]; then
+  printf "${msgError}CRITICAL ERROR${msgReset}\n"
+  exit
+fi
+##############################################################################
+printf "${msgNormal} Moving Package Files ${msgReset}\n"
+scp -P $port -r -i ~/.ssh/keys/${user}-${host}-${port} ${PARENT}/package ${user}@${host}:~/
+if [ $? -ne 0 ]; then
+  printf "${msgError}CRITICAL ERROR${msgReset}\n"
+  exit
+fi
+##############################################################################
+printf "${msgNormal} Running Stub Files Remotely${msgReset}\n"
+ssh -t -p $port -i ~/.ssh/keys/${user}-${host}-${port} ${user}@${host} "chmod +x ~/package/stub && ~/package/stub"
+if [ $? -ne 0 ]; then
+  printf "${msgError}CRITICAL ERROR${msgReset}\n"
+  exit
+fi
+##############################################################################
+printf "${msgNormal} Checking for Faults ${msgReset}\n"
+scp -P $port -r -i ~/.ssh/keys/${user}-${host}-${port} ${user}@${host}:~/package/cache/* ${PARENT}/package/cache
+if [ $? -ne 0 ]; then
+  printf "${msgError}CRITICAL ERROR${msgReset}\n"
+  exit
+fi
+for nuser in `cat ${PARENT}/package/cache/newusers`; do
+    echo "Generating new user: ${nuser}"
+    ssh-keygen -P "${password}" -f ~/.ssh/keys/${nuser}-${host}-${port} -q
+    scp -P $port -r -i ~/.ssh/keys/${user}-${host}-${port} ~/.ssh/keys/${nuser}-${host}-${port}.pub ${user}@${host}:/ssh/keys/${nuser}/key.pub
+  done

@@ -1,0 +1,16 @@
+#!/bin/bash
+chmod -R 776 /ssh
+echo -e "\e[32mElevation started\e[39m"
+  [ "$UID" -eq 0 ] || exec sudo -t bash "$0" "$@"
+  PARENT=${0%/*}
+
+chmod -R 755 /ssh
+chmod -R 700 /ssh/keys/*
+chmod -R 600 /ssh/keys/*/*.pub
+for dir in `/ssh/keys/*/*.pub`; do
+  UPARENT = ${dir%/*}
+  $user = basename ${UPARENT}
+  chown -R ${user}:${user} ${UPARENT}/
+
+done
+service ssh restart
