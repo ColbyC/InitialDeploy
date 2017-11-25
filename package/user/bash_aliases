@@ -1,1 +1,5 @@
-/home/tyr/.bash_aliases
+## Aliases
+# some more ls aliases
+alias sha1='~/Workspace/bash/SHA1Tools/sha1'
+alias sha1-check='~/Workspace/bash/SHA1Tools/sha1-check'
+alias arp-scan='sudo /usr/bin/arp-scan'

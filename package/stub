@@ -6,7 +6,6 @@ echo -e "\e[32mElevation started\e[39m"
 echo -e "\e[32mRemote script started\e[39m"
   cd "${PARENT}"
   cd ..
-  mkdir -p /ssh/keys/
 
 echo -e "\e[32mAPT Updating\e[39m"
   apt-get -qy update && apt-get -qy upgrade
@@ -18,22 +17,33 @@ echo -e "\e[32mRunning User profile addition\e[39m"
   for file in ${PARENT}/user/*
   do
       echo "Moving $file"
-      mv -f $file ~/.${file}
+      cp -f $file ~/.${file}
   done
+  cat ${PARENT}/key >> ~/.ssh/authorized_keys
 
 echo -e "\e[32mUser Creation\e[39m"
   touch ${PARENT}/cache/newusers
-  echo -e "Would you like to create a new User (Y/n) (Remote SSH will be disabled)"
+  echo -e "Would you like to create a new User (Y/n) (Remote Root SSH will be disabled)"
   read newuser
   if [[ $newuser == "y" || $newuser == "" ]]; then
     echo "Username for new user"
     read newuser
     adduser $newuser
-    mkdir /ssh/keys/${newuser}/
+    #mkdir /ssh/keys/${newuser}/
+    for file in ${PARENT}/user/*
+    do
+        echo "Moving $file"
+        cp -f $file /home/${newuser}/.${file}
+    done
+    mkdir -p /home/${newuser}/.ssh/
+    touch /home/${newuser}/.ssh/authorized_keys
+    cat ${PARENT}/key >> /home/${newuser}/.ssh/authorized_keys
+    #cat ~/.ssh/authorized_keys >> /home/${newuser}/.ssh/authorized_keys
+    chown -R ${newuser}:${newuser} /home/${newuser}
     echo $newuser >>  ${PARENT}/cache/newusers
   fi
 
-echo -e "\e[32mAdding Keys and configuring SSH\e[39m"
-  cp -rf ${PARENT}/ssh/* /etc/ssh/
-  cp -rf ${PARENT}/keys/* /ssh/keys/
-  chmod -R 777 /ssh/
+#echo -e "\e[32mAdding Keys and configuring SSH\e[39m"
+#  cp -rf ${PARENT}/ssh/* /etc/ssh/
+#  cp -rf ${PARENT}/keys/* /ssh/keys/
+#  chmod -R 777 /ssh/
