@@ -1,15 +1,4 @@
 #!/bin/bash
-
-echo -e "\e[33mHOST:\e[39m"
-read host
-echo -e "\e[33mPort\e[39m"
-read port
-echo -e "\e[33mUser:\e[39m"
-read user
-echo -e "\e[33mKey Password\e[39m"
-read password
-printf "\n\n"
-
 ## Setting Global Variables
 PARENT=${0%/*}
 # Color Variables
@@ -17,6 +6,16 @@ PARENT=${0%/*}
   msgSuccess='\033[1;32m'
   msgError='\033[1;31m'
   msgReset='\033[0m'
+echo -e "\e[33mHOST:\e[39m"
+read host
+echo -e "\e[33mPort\e[39m"
+read port
+echo -e "\e[33mUser:\e[39m ${msgError}[User must be root unless SUDO is installed]${msgReset}"
+read user
+echo -e "\e[33mKey Password\e[39m"
+read password
+printf "\n\n"
+
 ## Settings Function
 clean() {
   rm -rf ${PARENT}/package/keys/*
